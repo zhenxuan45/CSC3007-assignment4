@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CSC3007 Assignment 4</title>
+  <style>
+        h1{text-align: center;}
+        .tooltip{
+        pointer-events: none;}
+        .button{
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+        }
+        .center {
+            display: flex;
+            justify-content: center;
+            align-items: center;    
+            }
+  </style>
+</head>
+<body>
+<h1>Covid Tracing Data</h1>
+<div class="center">
+<button class="button" onclick="changeType('Gender')">Gender</button>
+<button class="button" onclick="changeType('Vaccination')">Vaccination</button>
+</div>
+<svg id="my_dataviz3"></svg>
+<svg id=""></svg>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
+<script>
+
+let width = 800, height = 400;
+
+let svg = d3.select("svg")
+    .attr("viewBox", "0 0 " + width + " " + height)
+
+    var SVG = d3.select("#my_dataviz3")
+
+    // create a list of gender keys and colors
+    var genderKeys = ["male", "female"]
+    var genderColor = ["lightblue", "pink"]   
+    var allGenderColor = d3.scaleOrdinal()
+        .domain(genderKeys)
+        .range(genderColor);
+
+    // create a list of vaccination keys and colors
+    var vaccinationKeys = ["Fully Vaccinated", "Partially Vacinated", "Not Vaccinated"]
+    var vaccinationColor = ["lightgreen", "yellow", "red"]    
+    var allVaccinationColor = d3.scaleOrdinal()
+        .domain(vaccinationKeys)
+        .range(vaccinationColor);
+
+    changeType('Gender')
+    function changeType(type) {
+        SVG.selectAll("rect").remove()
+        SVG.selectAll("text").remove()
+        if (type == 'Gender') {
+            // Add one dot in the legend for each name.
+            var size = 20
+            SVG.selectAll("mydots")
+            .data(genderKeys)
+            .enter()
+            .append("rect")
+                .attr("x", 0)
+                .attr("y", function(d,i){ return i*(size+5)})
+                .attr("width", size)
+                .attr("height", size)
+                .style("fill", function(d){ return allGenderColor(d)})
+
+            // Add one dot in the legend for each name.
+            SVG.selectAll("mylabels")
+            .data(genderKeys)
+            .enter()
+            .append("text")
+                .attr("x", size*1.2)
+                .attr("y", function(d,i){ return i*(size+5) + (size/2)})
+                .style("fill", "black")
+                .text(function(d){ return d})
+                .attr("text-anchor", "left")
+                .style("alignment-baseline", "middle")
+            
+            svg
+              .selectAll('circle')
+              .transition()
+              .duration(500)
+              .style('fill', (d) => {
+                 return allGenderColor(d.gender)
+                })
+        }
+            
+        else{
+            // Add one dot in the legend for each name.
+            var size = 20
+            SVG.selectAll("mydots")
+            .data(vaccinationKeys)
+            .enter()
+            .append("rect")
+                .attr("x", 0)
+                .attr("y", function(d,i){ return i*(size+5)})
+                .attr("width", size)
+                .attr("height", size)
+                .style("fill", function(d){ return allVaccinationColor(d)})
+
+            // Add one dot in the legend for each name.
+            SVG.selectAll("mylabels")
+            .data(vaccinationKeys)
+            .enter()
+            .append("text")
+                .attr("x", size*1.2)
+                .attr("y", function(d,i){ return i*(size+5) + (size/2)})
+                .style("fill", "black")
+                .text(function(d){ return d})
+                .attr("text-anchor", "left")
+                .style("alignment-baseline", "middle")
+
+            svg
+              .selectAll('circle')
+              .transition()
+              .duration(500)
+              .style('fill', (d) => {
+                if(d.vaccinated == 'yes (2 doses)'){
+                    return ('green')
+                }
+                if(d.vaccinated == 'partial (1 dose)'){
+                    return ('yellow')
+                }
+                if(d.vaccinated == 'no'){
+                    return ('red')
+                }
+                })
+        }
+    }
+
+    var SVG = d3.select("svg")
+// Load external data
+Promise.all([d3.json("links-sample.json"), d3.json("cases-sample.json")]).then(data => {
+
+    // create a list of gender keys and colors
+    var genderKeys = ["male", "female"]
+    var genderColor = ["lightblue", "pink"]   
+    var allGenderColor = d3.scaleOrdinal()
+        .domain(genderKeys)
+        .range(genderColor);
+
+    // create a list of vaccination keys and colors
+    var vaccinationKeys = ["Fully Vaccinated", "Partially Vacinated", "Not Vaccinated"]
+    var vaccinationColor = ["lightgreen", "yellow", "red"]    
+    var allVaccinationColor = d3.scaleOrdinal()
+        .domain(vaccinationKeys)
+        .range(vaccinationColor);
+
+    // Data preprocessing
+    data[0].forEach(e => {
+        e.source = e.infector;
+        e.target = e.infectee;
+    });
+    
+    console.log(data[0]); //links
+    console.log(data[1]); //cases
+
+    //Dragging 
+    function dragstarted(event, d) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+    }
+
+    function dragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+    }
+
+    function dragended(event, d) {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+    };
+
+        // Create arrow SVG
+        svg
+          .append('defs')
+          .append('marker')
+          .attr('id', 'arrowpointer')
+          .attr('viewBox', '-0 -5 10 10')
+          .attr('refX', 0)
+          .attr('refY', 0)
+          .attr('orient', 'auto')
+          .attr('markerWidth', 20)
+          .attr('markerHeight', 10)
+          .attr('xoverflow', 'visible')
+          .append('svg:path')
+          .attr('d', 'M 0,-5 L 10 ,0 L 0,5')
+          .attr('fill', 'black')
+          .style('stroke', 'none')
+
+        // Create tooltip
+        var tooltip = d3.select("body")
+            .append("div")
+            .style("opacity", 0)
+            .attr("class", "tooltip")
+            .style("background-color", "white")
+            .style("border", "solid")
+            .style("border-width", "1px")
+            .style("border-radius", "5px")
+            .style("padding", "10px")
+            .style("position", "absolute")
+
+        // Link
+        let linkpath = svg.append('g')
+          .attr('id', 'links')
+          .selectAll('path')
+          .data(data[0])
+          .enter()
+          .append('path')
+          .attr('fill', 'none')
+          .attr('stroke', 'black')
+          .attr('marker-end', 'url(#arrowpointer)')
+
+        // Node
+        let node = svg
+            .append('g')
+            .attr('id', 'nodes')
+            .selectAll('circle')
+            .data(data[1])
+            .enter()
+            .append('circle')
+            .attr('r', 10)
+            .style('fill', (d) => {
+                return allGenderColor(d.gender)
+            })
+            .call(d3.drag().on('start', dragstarted).on('drag', dragged).on('end', dragended))
+            .on('mouseover', function (event, d) {
+                tooltip
+                .html(
+                    '<b>Case ID: </b>' +
+                    d.id +
+                    '</br><br><b>Age: </b>' +
+                    d.age +
+                    '<br><b>Date: </b>' +
+                    d.date +
+                    '<br><b>Gender: </b>' +
+                    d.gender +
+                    '<br><b>Nationality: </b>' +
+                    d.nationality +
+                    '<br><b>Occupation: </b>' +
+                    d.occupation +
+                    '<br><b>Organization: </b>' +
+                    d.organization +
+                    '<br><b>Serology: </b>' +
+                    d.serology +
+                    '<br><b>Vaccinated: </b>' +
+                    d.vaccinated
+                )
+                .style("opacity", 1)  
+          })
+          .on("mousemove", function (event) {
+            tooltip
+                .style("top", event.pageY - 10 + "px")
+                .style("left", event.pageX + 10 + "px");
+            })
+          .on('mouseout', function (d) {
+            d3.select(this).transition().attr('class', '')
+            tooltip
+            .style('opacity', 0)
+          })
+    // Force Simulation
+    let simulation = d3.forceSimulation()
+    .nodes(data[1])
+    // .force("x", d3.forceX().strength(0.5).x( width /2 ))
+    // .force("y", d3.forceY().strength(0.2).y( height /2 ))
+    .force("link", d3.forceLink(data[0]).id(d => d.id)
+        .distance(50)
+        .strength(0.5))
+    .force('center', d3.forceCenter(width / 2, height / 2))
+    .force("charge", d3.forceManyBody().strength(30))
+    .force("collide", d3.forceCollide().strength(1).radius(30))
+    .on("tick", d => {
+        node
+        .attr("cx", d => d.x)
+        .attr("cy", d => d.y);
+        
+        linkpath.attr('d', function (d) {
+            var dx = d.target.x - d.source.x,
+            dy = d.target.y - d.source.y,
+            dr = Math.sqrt(dx * dx + dy * dy)
+            return (
+            'M' + d.source.x + ',' + d.source.y + 'A' + dr + ',' + dr + ' 0 0,1 ' + d.target.x + ',' + d.target.y
+            )
+    });
+        linkpath.attr('d', function (d) {
+            var pl = this.getTotalLength(),
+            m = this.getPointAtLength(this.getTotalLength() - 20)
+            var dx = m.x - d.source.x,
+            dy = m.y - d.source.y,
+            dr = Math.sqrt(dx * dx + dy * dy)
+            return (
+            'M' + d.source.x + ',' + d.source.y + 'A' + dr + ',' + dr + ' 0 0,1 ' + m.x + ',' + m.y
+            )
+        }) 
+})
+})
+</script>
+
+</body>
+</html>
